@@ -563,6 +563,10 @@ public:
     static bool updateMetadata(const SyncFileItem &item, const QString &localFolderPath, SyncJournalDb &journal, Vfs &vfs);
     bool updateMetadata(const SyncFileItem &item); // convenience for the above
 
+    void setChecksumMismatchEntry(const QByteArray &latestChecksum, const QString &filePath, quint16 numCases);
+    void removeChecksumMismatchEntry(const QByteArray &latestChecksum);
+    QPair<QString, quint16> checksumMismatchEntry(const QByteArray &latestChecksum) const;
+
 private slots:
 
     void abortTimeout()
@@ -609,6 +613,9 @@ private:
 
     const QString _localDir; // absolute path to the local directory. ends with '/'
     const QString _remoteFolder; // remote folder, ends with '/'
+
+    // store a newly-calculated checksum for a file download checksum mismatch (lastChecksum<filePath, numberOfCases>)
+    QMap<QByteArray, QPair<QString, quint16>> _checksumMismatchTable;
 };
 
 

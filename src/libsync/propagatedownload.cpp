@@ -820,15 +820,27 @@ void PropagateDownloadFile::slotGetFinished()
     validator->start(_tmpFile.fileName(), checksumHeader);
 }
 
-void PropagateDownloadFile::slotChecksumFail(const QString &errMsg, const QByteArray &checksumType, const QString &filePath)
+void PropagateDownloadFile::slotChecksumFail(const QString &errMsg, const QByteArray &checksumType, const QByteArray &checksum, const QString &filePath)
 {
-    if (!checksumType.isEmpty() && !filePath.isEmpty()) {
+    if (!checksumType.isEmpty() && !checksum.isEmpty() && !filePath.isEmpty()) {
         ConfigFile cfgFile;
 
         if (cfgFile.allowChecksumValidationFail()) {
-            qCWarning(lcPropagateDownload) << "Checksum validation has failed, but, allowChecksumValidationFail is set, so, let's continue..."; 
-            startContentChecksumCompute(checksumType, filePath);
-            return;
+            auto checksumMismatchEntry = propagator()->checksumMismatchEntry(checksum);
+            if (checksumMismatchEntry.first == filePath && checksumMismatchEntry.second >= 1) {
+                // found checksumMismatchEntry
+                propagator()->removeChecksumMismatchEntry(checksum);
+                qCWarning(lcPropagateDownload) << "Checksum validation has failed, but, allowChecksumValidationFail is set, so, let's continue...";
+                startContentChecksumCompute(checksumType, filePath);
+                return;
+            } else {
+                // not found or haven't mismatched enough times
+                if (checksumMismatchEntry.first == filePath) {
+                    propagator()->setChecksumMismatchEntry(checksum, filePath, checksumMismatchEntry.second + 1);
+                } else {
+                    propagator()->setChecksumMismatchEntry(checksum, filePath, 1);
+                }
+            }
         }
     }
     

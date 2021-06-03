@@ -163,7 +163,7 @@ public:
 
 signals:
     void validated(const QByteArray &checksumType, const QByteArray &checksum);
-    void validationFailed(const QString &errMsg, const QByteArray &checksumType, const QString &filePath);
+    void validationFailed(const QString &errMsg, const QByteArray &checksumType, const QByteArray &checksum, const QString &filePath);
 
 private slots:
     void slotChecksumCalculated(const QByteArray &checksumType, const QByteArray &checksum);

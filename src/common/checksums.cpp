@@ -328,7 +328,7 @@ ComputeChecksum *ValidateChecksumHeader::prepareStart(const QByteArray &checksum
 
     if (!parseChecksumHeader(checksumHeader, &_expectedChecksumType, &_expectedChecksum)) {
         qCWarning(lcChecksums) << "Checksum header malformed:" << checksumHeader;
-        emit validationFailed(tr("The checksum header is malformed."), QByteArray(), _filePath);
+        emit validationFailed(tr("The checksum header is malformed."), QByteArray(), QByteArray(), _filePath);
         return nullptr;
     }
 
@@ -356,11 +356,11 @@ void ValidateChecksumHeader::slotChecksumCalculated(const QByteArray &checksumTy
     const QByteArray &checksum)
 {
     if (checksumType != _expectedChecksumType) {
-        emit validationFailed(tr("The checksum header contained an unknown checksum type '%1'").arg(QString::fromLatin1(_expectedChecksumType)), QByteArray(), _filePath);
+        emit validationFailed(tr("The checksum header contained an unknown checksum type '%1'").arg(QString::fromLatin1(_expectedChecksumType)), QByteArray(), QByteArray(), _filePath);
         return;
     }
     if (checksum != _expectedChecksum) {
-        emit validationFailed(tr("The downloaded file does not match the checksum, it will be resumed. '%1' != '%2'").arg(QString::fromUtf8(_expectedChecksum), QString::fromUtf8(checksum)), checksumType, _filePath);
+        emit validationFailed(tr("The downloaded file does not match the checksum, it will be resumed. '%1' != '%2'").arg(QString::fromUtf8(_expectedChecksum), QString::fromUtf8(checksum)), checksumType, checksum, _filePath);
         return;
     }
     emit validated(checksumType, checksum);
