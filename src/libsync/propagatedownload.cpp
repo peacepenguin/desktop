@@ -28,6 +28,8 @@
 #include "propagatedownloadencrypted.h"
 #include "common/vfs.h"
 
+#include "configfile.h"
+
 #include <QLoggingCategory>
 #include <QNetworkAccessManager>
 #include <QFileInfo>
@@ -385,19 +387,17 @@ void PropagateDownloadFile::start()
     propagator()->_journal->getFileRecord(parentPath, &parentRec);
 
     const auto account = propagator()->account();
-    if (!account->capabilities().clientSideEncryptionAvailable() ||
-        !parentRec.isValid() ||
-        !parentRec._isE2eEncrypted) {
+    if (!account->capabilities().clientSideEncryptionAvailable() || !parentRec.isValid() || !parentRec._isE2eEncrypted) {
         startAfterIsEncryptedIsChecked();
     } else {
         _downloadEncryptedHelper = new PropagateDownloadEncrypted(propagator(), parentPath, _item, this);
         connect(_downloadEncryptedHelper, &PropagateDownloadEncrypted::fileMetadataFound, [this] {
-          _isEncrypted = true;
-          startAfterIsEncryptedIsChecked();
+            _isEncrypted = true;
+            startAfterIsEncryptedIsChecked();
         });
         connect(_downloadEncryptedHelper, &PropagateDownloadEncrypted::failed, [this] {
-          done(SyncFileItem::NormalError,
-               tr("File %1 cannot be downloaded because encryption information is missing.").arg(QDir::toNativeSeparators(_item->_file)));
+            done(SyncFileItem::NormalError,
+                tr("File %1 cannot be downloaded because encryption information is missing.").arg(QDir::toNativeSeparators(_item->_file)));
         });
         _downloadEncryptedHelper->start();
     }
@@ -476,8 +476,7 @@ void PropagateDownloadFile::startAfterIsEncryptedIsChecked()
     // If the hashes are collision safe and identical, we assume the content is too.
     // For weak checksums, we only do that if the mtimes are also identical.
 
-    const auto csync_is_collision_safe_hash = [](const QByteArray &checksum_header)
-    {
+    const auto csync_is_collision_safe_hash = [](const QByteArray &checksum_header) {
         return checksum_header.startsWith("SHA")
             || checksum_header.startsWith("MD5:");
     };
@@ -756,7 +755,7 @@ void PropagateDownloadFile::slotGetFinished()
     const auto contentEncoding = job->reply()->rawHeader("content-encoding").toLower();
     if ((contentEncoding == "gzip" || contentEncoding == "deflate")
         && (job->reply()->attribute(QNetworkRequest::HTTP2WasUsedAttribute).toBool()
-         || job->reply()->attribute(QNetworkRequest::SpdyWasUsedAttribute).toBool())) {
+            || job->reply()->attribute(QNetworkRequest::SpdyWasUsedAttribute).toBool())) {
         bodySize = 0;
         hasSizeHeader = false;
     }
@@ -821,8 +820,18 @@ void PropagateDownloadFile::slotGetFinished()
     validator->start(_tmpFile.fileName(), checksumHeader);
 }
 
-void PropagateDownloadFile::slotChecksumFail(const QString &errMsg)
+void PropagateDownloadFile::slotChecksumFail(const QString &errMsg, const QByteArray &checksumType, const QString &filePath)
 {
+    if (!checksumType.isEmpty() && !filePath.isEmpty()) {
+        ConfigFile cfgFile;
+
+        if (cfgFile.allowChecksumValidationFail()) {
+            qCWarning(lcPropagateDownload) << "Checksum validation has failed, but, allowChecksumValidationFail is set, so, let's continue..."; 
+            startContentChecksumCompute(checksumType, filePath);
+            return;
+        }
+    }
+    
     FileSystem::remove(_tmpFile.fileName());
     propagator()->_anotherSyncNeeded = true;
     done(SyncFileItem::SoftError, errMsg); // tr("The file downloaded with a broken checksum, will be redownloaded."));
@@ -848,6 +857,18 @@ void PropagateDownloadFile::deleteExistingFolder()
     if (!propagator()->createConflict(_item, _associatedComposite, &error)) {
         done(SyncFileItem::NormalError, error);
     }
+}
+
+void PropagateDownloadFile::startContentChecksumCompute(const QByteArray &checksumType, const QString &path)
+{
+    qCInfo(lcPropagateDownload) << "Start checksum compute with checksumType:" << checksumType << " for path:" << path;
+    // Compute the content checksum.
+    auto computeChecksum = new ComputeChecksum(this);
+    computeChecksum->setChecksumType(checksumType);
+
+    connect(computeChecksum, &ComputeChecksum::done,
+        this, &PropagateDownloadFile::contentChecksumComputed);
+    computeChecksum->start(path);
 }
 
 namespace { // Anonymous namespace for the recall feature
@@ -938,13 +959,7 @@ void PropagateDownloadFile::transmissionChecksumValidated(const QByteArray &chec
         return contentChecksumComputed(checksumType, checksum);
     }
 
-    // Compute the content checksum.
-    auto computeChecksum = new ComputeChecksum(this);
-    computeChecksum->setChecksumType(theContentChecksumType);
-
-    connect(computeChecksum, &ComputeChecksum::done,
-        this, &PropagateDownloadFile::contentChecksumComputed);
-    computeChecksum->start(_tmpFile.fileName());
+    startContentChecksumCompute(theContentChecksumType, _tmpFile.fileName());
 }
 
 void PropagateDownloadFile::contentChecksumComputed(const QByteArray &checksumType, const QByteArray &checksum)

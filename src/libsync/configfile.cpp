@@ -101,6 +101,7 @@ static const char useNewBigFolderSizeLimitC[] = "useNewBigFolderSizeLimit";
 static const char confirmExternalStorageC[] = "confirmExternalStorage";
 static const char moveToTrashC[] = "moveToTrash";
 
+static const char allowChecksumValidationFailC[] = "allowChecksumValidationFail";
 
 const char certPath[] = "http_certificatePath";
 const char certPasswd[] = "http_certificatePasswd";
@@ -887,6 +888,16 @@ bool ConfigFile::moveToTrash() const
 void ConfigFile::setMoveToTrash(bool isChecked)
 {
     setValue(moveToTrashC, isChecked);
+}
+
+void ConfigFile::setAllowChecksumValidationFail(bool isChecked)
+{
+    setValue(allowChecksumValidationFailC, isChecked);
+}
+
+bool ConfigFile::allowChecksumValidationFail() const
+{
+    return getValue(allowChecksumValidationFailC, QString(), false).toBool();
 }
 
 bool ConfigFile::promptDeleteFiles() const
