@@ -42,7 +42,7 @@ using namespace OCC::Utility;
          _successDown = true;
     }
 
-    void slotDownError( const QString& errMsg ) {
+    void slotDownError(const QString &errMsg, const QByteArray&, const QByteArray&, const QString&) {
          QCOMPARE(_expectedError, errMsg);
          _errorSeen = true;
     }
@@ -180,7 +180,7 @@ using namespace OCC::Utility;
 #else
         auto *vali = new ValidateChecksumHeader(this);
         connect(vali, SIGNAL(validated(QByteArray,QByteArray)), this, SLOT(slotDownValidated()));
-        connect(vali, SIGNAL(validationFailed(QString)), this, SLOT(slotDownError(QString)));
+        connect(vali, SIGNAL(validationFailed(QString, QByteArray, QByteArray, QString)), this, SLOT(slotDownError(QString, QByteArray, QByteArray, QString)));
 
         auto file = new QFile(_testfile, vali);
         file->open(QIODevice::ReadOnly);

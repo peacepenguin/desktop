@@ -68,6 +68,7 @@ public:
 
     void keyValueStoreSet(const QString &key, qint64 value);
     qint64 keyValueStoreGetInt(const QString &key, qint64 defaultValue);
+    void keyValueStoreDelete(const QString &key);
 
     bool deleteFileRecord(const QString &filename, bool recursively = false);
     bool updateFileRecordChecksum(const QString &filename,
@@ -423,6 +424,7 @@ private:
     SqlQuery _setDataFingerprintQuery2;
     SqlQuery _setKeyValueStoreQuery;
     SqlQuery _getKeyValueStoreQuery;
+    SqlQuery _deleteKeyValueStoreQuery;
     SqlQuery _getConflictRecordQuery;
     SqlQuery _setConflictRecordQuery;
     SqlQuery _deleteConflictRecordQuery;

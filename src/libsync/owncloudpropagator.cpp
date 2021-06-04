@@ -179,8 +179,8 @@ static void blacklistUpdate(SyncJournalDb *journal, SyncFileItem &item)
         || ((item._status == SyncFileItem::NormalError
                 || item._status == SyncFileItem::SoftError
                 || item._status == SyncFileItem::DetailError)
-            && item._httpErrorCode != 0 // or non-local error
-        );
+               && item._httpErrorCode != 0 // or non-local error
+               );
 
     // No new entry? Possibly remove the old one, then done.
     if (!mayBlacklist) {
@@ -237,7 +237,8 @@ void PropagateItemJob::done(SyncFileItem::Status statusArg, const QString &error
         }
     }
 
-    if (propagator()->_abortRequested && (_item->_status == SyncFileItem::NormalError || _item->_status == SyncFileItem::FatalError)) {
+    if (propagator()->_abortRequested && (_item->_status == SyncFileItem::NormalError
+                                          || _item->_status == SyncFileItem::FatalError)) {
         // an abort request is ongoing. Change the status to Soft-Error
         _item->_status = SyncFileItem::SoftError;
     }
@@ -406,7 +407,8 @@ void OwncloudPropagator::start(const SyncFileItemVector &items)
             // this is an item in a directory which is going to be removed.
             auto *delDirJob = qobject_cast<PropagateDirectory *>(directoriesToRemove.first());
 
-            const auto isNewDirectory = item->isDirectory() && (item->_instruction == CSYNC_INSTRUCTION_NEW || item->_instruction == CSYNC_INSTRUCTION_TYPE_CHANGE);
+            const auto isNewDirectory = item->isDirectory() &&
+                    (item->_instruction == CSYNC_INSTRUCTION_NEW || item->_instruction == CSYNC_INSTRUCTION_TYPE_CHANGE);
 
             if (item->_instruction == CSYNC_INSTRUCTION_REMOVE || isNewDirectory) {
                 // If it is a remove it is already taken care of by the removal of the parent directory
@@ -614,8 +616,7 @@ QString OwncloudPropagator::localPath() const
 
 void OwncloudPropagator::scheduleNextJob()
 {
-    if (_jobScheduled)
-        return; // don't schedule more than 1
+    if (_jobScheduled) return; // don't schedule more than 1
     _jobScheduled = true;
     QTimer::singleShot(3, this, &OwncloudPropagator::scheduleNextJobImpl);
 }
@@ -768,27 +769,6 @@ bool OwncloudPropagator::updateMetadata(const SyncFileItem &item, const QString 
 bool OwncloudPropagator::updateMetadata(const SyncFileItem &item)
 {
     return updateMetadata(item, _localDir, *_journal, *syncOptions()._vfs);
-}
-
-void OwncloudPropagator::setChecksumMismatchEntry(const QByteArray &latestChecksum, const QString &filePath, quint16 numCases)
-{
-    _checksumMismatchTable[latestChecksum] = { filePath, numCases };
-}
-
-void OwncloudPropagator::removeChecksumMismatchEntry(const QByteArray &latestChecksum)
-{
-    _checksumMismatchTable.remove(latestChecksum);
-}
-
-QPair<QString, quint16> OwncloudPropagator::checksumMismatchEntry(const QByteArray &latestChecksum) const
-{
-    const auto foundCheksumMismatchEntry = _checksumMismatchTable.find(latestChecksum);
-
-    if (foundCheksumMismatchEntry != _checksumMismatchTable.cend()) {
-        return *foundCheksumMismatchEntry;
-    }
-
-    return QPair<QString, quint16>("", 0);
 }
 
 // ================================================================================

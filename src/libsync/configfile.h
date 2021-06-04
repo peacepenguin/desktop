@@ -146,7 +146,6 @@ public:
     void setMoveToTrash(bool);
 
     /** should we allow checksum validation to fail? set to true to workaround corrupted checksums **/
-    void setAllowChecksumValidationFail(bool isChecked);
     bool allowChecksumValidationFail() const;
 
     static bool setConfDir(const QString &value);

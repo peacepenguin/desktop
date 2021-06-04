@@ -890,11 +890,6 @@ void ConfigFile::setMoveToTrash(bool isChecked)
     setValue(moveToTrashC, isChecked);
 }
 
-void ConfigFile::setAllowChecksumValidationFail(bool isChecked)
-{
-    setValue(allowChecksumValidationFailC, isChecked);
-}
-
 bool ConfigFile::allowChecksumValidationFail() const
 {
     return getValue(allowChecksumValidationFailC, QString(), false).toBool();

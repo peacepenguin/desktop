@@ -40,6 +40,10 @@
 #include <unistd.h>
 #endif
 
+namespace {
+    const quint16 numChecksumFailuresAllowed = 1;
+}
+
 namespace OCC {
 
 Q_LOGGING_CATEGORY(lcGetJob, "nextcloud.sync.networkjob.get", QtInfoMsg)
@@ -387,17 +391,19 @@ void PropagateDownloadFile::start()
     propagator()->_journal->getFileRecord(parentPath, &parentRec);
 
     const auto account = propagator()->account();
-    if (!account->capabilities().clientSideEncryptionAvailable() || !parentRec.isValid() || !parentRec._isE2eEncrypted) {
+    if (!account->capabilities().clientSideEncryptionAvailable() ||
+        !parentRec.isValid() ||
+        !parentRec._isE2eEncrypted) {
         startAfterIsEncryptedIsChecked();
     } else {
         _downloadEncryptedHelper = new PropagateDownloadEncrypted(propagator(), parentPath, _item, this);
         connect(_downloadEncryptedHelper, &PropagateDownloadEncrypted::fileMetadataFound, [this] {
-            _isEncrypted = true;
-            startAfterIsEncryptedIsChecked();
+          _isEncrypted = true;
+          startAfterIsEncryptedIsChecked();
         });
         connect(_downloadEncryptedHelper, &PropagateDownloadEncrypted::failed, [this] {
-            done(SyncFileItem::NormalError,
-                tr("File %1 cannot be downloaded because encryption information is missing.").arg(QDir::toNativeSeparators(_item->_file)));
+          done(SyncFileItem::NormalError,
+               tr("File %1 cannot be downloaded because encryption information is missing.").arg(QDir::toNativeSeparators(_item->_file)));
         });
         _downloadEncryptedHelper->start();
     }
@@ -476,7 +482,8 @@ void PropagateDownloadFile::startAfterIsEncryptedIsChecked()
     // If the hashes are collision safe and identical, we assume the content is too.
     // For weak checksums, we only do that if the mtimes are also identical.
 
-    const auto csync_is_collision_safe_hash = [](const QByteArray &checksum_header) {
+    const auto csync_is_collision_safe_hash = [](const QByteArray &checksum_header)
+    {
         return checksum_header.startsWith("SHA")
             || checksum_header.startsWith("MD5:");
     };
@@ -755,7 +762,7 @@ void PropagateDownloadFile::slotGetFinished()
     const auto contentEncoding = job->reply()->rawHeader("content-encoding").toLower();
     if ((contentEncoding == "gzip" || contentEncoding == "deflate")
         && (job->reply()->attribute(QNetworkRequest::HTTP2WasUsedAttribute).toBool()
-            || job->reply()->attribute(QNetworkRequest::SpdyWasUsedAttribute).toBool())) {
+         || job->reply()->attribute(QNetworkRequest::SpdyWasUsedAttribute).toBool())) {
         bodySize = 0;
         hasSizeHeader = false;
     }
@@ -826,20 +833,16 @@ void PropagateDownloadFile::slotChecksumFail(const QString &errMsg, const QByteA
         ConfigFile cfgFile;
 
         if (cfgFile.allowChecksumValidationFail()) {
-            auto checksumMismatchEntry = propagator()->checksumMismatchEntry(checksum);
-            if (checksumMismatchEntry.first == filePath && checksumMismatchEntry.second >= 1) {
-                // found checksumMismatchEntry
-                propagator()->removeChecksumMismatchEntry(checksum);
-                qCWarning(lcPropagateDownload) << "Checksum validation has failed, but, allowChecksumValidationFail is set, so, let's continue...";
+            const QString key = checksum + _item->_fileId;
+            const auto numChecksumMismatchEntries = propagator()->_journal->keyValueStoreGetInt(QString(key), 0);
+            if (numChecksumMismatchEntries < numChecksumFailuresAllowed) {
+                qCWarning(lcPropagateDownload) << "Checksum validation has failed" << numChecksumMismatchEntries << " times, but, allowChecksumValidationFail is set.Let's give it another try...";
+                propagator()->_journal->keyValueStoreSet(QString(key), numChecksumMismatchEntries + 1);
+            } else {
+                propagator()->_journal->keyValueStoreDelete(QString(key));
+                qCWarning(lcPropagateDownload) << "Checksum validation has failed" << numChecksumMismatchEntries << " times, but, allowChecksumValidationFail is set, so, let's continue...";
                 startContentChecksumCompute(checksumType, filePath);
                 return;
-            } else {
-                // not found or haven't mismatched enough times
-                if (checksumMismatchEntry.first == filePath) {
-                    propagator()->setChecksumMismatchEntry(checksum, filePath, checksumMismatchEntry.second + 1);
-                } else {
-                    propagator()->setChecksumMismatchEntry(checksum, filePath, 1);
-                }
             }
         }
     }

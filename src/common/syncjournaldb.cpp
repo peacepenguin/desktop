@@ -1013,6 +1013,13 @@ qint64 SyncJournalDb::keyValueStoreGetInt(const QString &key, qint64 defaultValu
     return _getKeyValueStoreQuery.int64Value(0);
 }
 
+void SyncJournalDb::keyValueStoreDelete(const QString &key)
+{
+    ASSERT(_deleteKeyValueStoreQuery.initOrReset("DELETE FROM key_value_store WHERE key=?1;", _db));
+    _deleteKeyValueStoreQuery.bindValue(1, key);
+    ASSERT(_deleteKeyValueStoreQuery.exec());
+}
+
 // TODO: filename -> QBytearray?
 bool SyncJournalDb::deleteFileRecord(const QString &filename, bool recursively)
 {
