@@ -41,7 +41,7 @@
 #endif
 
 namespace {
-    const quint16 numChecksumFailuresAllowed = 1;
+    constexpr quint16 numChecksumFailuresAllowed = 1;
 }
 
 namespace OCC {
@@ -833,13 +833,13 @@ void PropagateDownloadFile::slotChecksumFail(const QString &errMsg, const QByteA
         ConfigFile cfgFile;
 
         if (cfgFile.allowChecksumValidationFail()) {
-            const QString key = checksum + _item->_fileId;
-            const auto numChecksumMismatchEntries = propagator()->_journal->keyValueStoreGetInt(QString(key), 0);
+            const QString key = QByteArray(checksum + _item->_fileId);
+            const auto numChecksumMismatchEntries = propagator()->_journal->keyValueStoreGetInt(key, 0);
             if (numChecksumMismatchEntries < numChecksumFailuresAllowed) {
                 qCWarning(lcPropagateDownload) << "Checksum validation has failed" << numChecksumMismatchEntries << " times, but, allowChecksumValidationFail is set.Let's give it another try...";
-                propagator()->_journal->keyValueStoreSet(QString(key), numChecksumMismatchEntries + 1);
+                propagator()->_journal->keyValueStoreSet(key, numChecksumMismatchEntries + 1);
             } else {
-                propagator()->_journal->keyValueStoreDelete(QString(key));
+                propagator()->_journal->keyValueStoreDelete(key);
                 qCWarning(lcPropagateDownload) << "Checksum validation has failed" << numChecksumMismatchEntries << " times, but, allowChecksumValidationFail is set, so, let's continue...";
                 startContentChecksumCompute(checksumType, filePath);
                 return;
