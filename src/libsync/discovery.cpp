@@ -893,12 +893,14 @@ void ProcessDirectoryJob::processFileAnalyzeLocalInfo(
     _childModified = true;
 
     auto postProcessLocalNew = [item, localEntry, path, this]() {
-        if (localEntry.isVirtualFile) {
+        if (localEntry.isVirtualFile || localEntry.isDirectory) {
             const bool isPlaceHolder = _discoveryData->_syncOptions._vfs->isDehydratedPlaceholder(_discoveryData->_localDir + path._local);
-            if (isPlaceHolder) {
+            // must be file placeholder or an online-only folder
+            if (isPlaceHolder || (_discoveryData->_syncOptions._vfs->mode() != Vfs::Off && *_discoveryData->_syncOptions._vfs->availability(path._local) == VfsItemAvailability::OnlineOnly)) {
                 qCWarning(lcDisco) << "Wiping virtual file without db entry for" << path._local;
                 item->_instruction = CSYNC_INSTRUCTION_REMOVE;
                 item->_direction = SyncFileItem::Down;
+                _childModified = false;
             } else {
                 qCWarning(lcDisco) << "Virtual file without db entry for" << path._local
                                    << "but looks odd, keeping";
