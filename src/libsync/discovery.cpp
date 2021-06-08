@@ -895,13 +895,22 @@ void ProcessDirectoryJob::processFileAnalyzeLocalInfo(
     auto postProcessLocalNew = [item, localEntry, path, this]() {
         if (localEntry.isVirtualFile || localEntry.isDirectory) {
             const bool isPlaceHolder = _discoveryData->_syncOptions._vfs->isDehydratedPlaceholder(_discoveryData->_localDir + path._local);
+
+            const bool isNonHydratedVfsFolder = (localEntry.isDirectory
+                && _discoveryData->_syncOptions._vfs->mode() != Vfs::Off
+                && *_discoveryData->_syncOptions._vfs->availability(path._local) == VfsItemAvailability::OnlineOnly);
+
             // must be file placeholder or an online-only folder
-            if (isPlaceHolder || (_discoveryData->_syncOptions._vfs->mode() != Vfs::Off && *_discoveryData->_syncOptions._vfs->availability(path._local) == VfsItemAvailability::OnlineOnly)) {
+            if (isPlaceHolder || isNonHydratedVfsFolder) {
                 qCWarning(lcDisco) << "Wiping virtual file without db entry for" << path._local;
                 item->_instruction = CSYNC_INSTRUCTION_REMOVE;
                 item->_direction = SyncFileItem::Down;
                 _childModified = false;
             } else {
+                if (localEntry.isDirectory && !isNonHydratedVfsFolder) {
+                    qCWarning(lcDisco) << "Virtual directory without db entry for" << path._local << "but it is half-hydrated, so, keeping it.";
+                    return;
+                }
                 qCWarning(lcDisco) << "Virtual file without db entry for" << path._local
                                    << "but looks odd, keeping";
                 item->_instruction = CSYNC_INSTRUCTION_IGNORE;
