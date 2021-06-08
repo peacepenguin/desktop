@@ -179,8 +179,8 @@ using namespace OCC::Utility;
         QSKIP("ZLIB not found.", SkipSingle);
 #else
         auto *vali = new ValidateChecksumHeader(this);
-        connect(vali, SIGNAL(validated(QByteArray,QByteArray)), this, SLOT(slotDownValidated()));
-        connect(vali, SIGNAL(validationFailed(QString, QByteArray, QByteArray, QString)), this, SLOT(slotDownError(QString, QByteArray, QByteArray, QString)));
+        connect(vali, &ValidateChecksumHeader::validated, this, &TestChecksumValidator::slotDownValidated);
+        connect(vali, &ValidateChecksumHeader::validationFailed, this, &TestChecksumValidator::slotDownError);
 
         auto file = new QFile(_testfile, vali);
         file->open(QIODevice::ReadOnly);

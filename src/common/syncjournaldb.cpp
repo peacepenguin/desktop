@@ -1015,9 +1015,15 @@ qint64 SyncJournalDb::keyValueStoreGetInt(const QString &key, qint64 defaultValu
 
 void SyncJournalDb::keyValueStoreDelete(const QString &key)
 {
-    ASSERT(_deleteKeyValueStoreQuery.initOrReset("DELETE FROM key_value_store WHERE key=?1;", _db));
+    if (!_deleteKeyValueStoreQuery.initOrReset("DELETE FROM key_value_store WHERE key=?1;", _db)) {
+        qCWarning(lcDb) << "Failed to initOrReset _deleteKeyValueStoreQuery";
+        Q_ASSERT(false);
+    }
     _deleteKeyValueStoreQuery.bindValue(1, key);
-    ASSERT(_deleteKeyValueStoreQuery.exec());
+    if (!_deleteKeyValueStoreQuery.exec()) {
+        qCWarning(lcDb) << "Failed to exec _deleteKeyValueStoreQuery for key" << key;
+        Q_ASSERT(false);
+    }
 }
 
 // TODO: filename -> QBytearray?

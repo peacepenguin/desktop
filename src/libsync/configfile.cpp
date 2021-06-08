@@ -892,7 +892,7 @@ void ConfigFile::setMoveToTrash(bool isChecked)
 
 bool ConfigFile::allowChecksumValidationFail() const
 {
-    return getValue(allowChecksumValidationFailC, QString(), false).toBool();
+    return getValue(allowChecksumValidationFailC, {}, false).toBool();
 }
 
 bool ConfigFile::promptDeleteFiles() const

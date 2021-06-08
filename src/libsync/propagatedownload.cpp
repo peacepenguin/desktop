@@ -878,7 +878,7 @@ void PropagateDownloadFile::startContentChecksumCompute(const QByteArray &checks
 {
     qCInfo(lcPropagateDownload) << "Start checksum compute with checksumType:" << checksumType << " for path:" << path;
     // Compute the content checksum.
-    auto computeChecksum = new ComputeChecksum(this);
+    const auto computeChecksum = new ComputeChecksum(this);
     computeChecksum->setChecksumType(checksumType);
 
     connect(computeChecksum, &ComputeChecksum::done,
