@@ -906,9 +906,17 @@ void ProcessDirectoryJob::processFileAnalyzeLocalInfo(
                 item->_instruction = CSYNC_INSTRUCTION_REMOVE;
                 item->_direction = SyncFileItem::Down;
                 _childModified = false;
+                if (localEntry.isDirectory) {
+                    if (_discoveryData) {
+                        emit _discoveryData->addErrorToGui(SyncFileItem::SoftError, tr("Conflict when uploading a folder %1. It's going to get wiped!").arg(path._local));
+                    }
+                }
             } else {
                 if (localEntry.isDirectory && !isNonHydratedVfsFolder) {
                     qCWarning(lcDisco) << "Virtual directory without db entry for" << path._local << "but it is half-hydrated, so, keeping it.";
+                    if (_discoveryData) {
+                        emit _discoveryData->addErrorToGui(SyncFileItem::SoftError, tr("Conflict when uploading some files to a folder %1. Those, conflicted, are going to get wiped!").arg(path._local));
+                    }                    
                     return;
                 }
                 qCWarning(lcDisco) << "Virtual file without db entry for" << path._local

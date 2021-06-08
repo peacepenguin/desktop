@@ -151,6 +151,8 @@ signals:
     /// We've produced a new sync error of a type.
     void syncError(const QString &message, ErrorCategory category = ErrorCategory::Normal);
 
+    void addErrorToGui(SyncFileItem::Status status, const QString &errorMessage);
+
     void finished(bool success);
     void started();
 
@@ -202,6 +204,8 @@ private slots:
 
     void slotInsufficientLocalStorage();
     void slotInsufficientRemoteStorage();
+
+    void slotAddErrorToGui(SyncFileItem::Status status, const QString &errorMessage);
 
 private:
     bool checkErrorBlacklisting(SyncFileItem &item);

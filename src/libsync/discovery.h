@@ -294,5 +294,7 @@ signals:
     void finished();
     // The root etag of this directory was fetched
     void etag(const QString &, const QDateTime &time);
+
+    void addErrorToGui(SyncFileItem::Status status, const QString &errorMessage);
 };
 }

@@ -279,6 +279,8 @@ signals:
       * The path is relative to the sync folder, similar to item->_file
       */
     void silentlyExcluded(const QString &folderPath);
+
+    void addErrorToGui(SyncFileItem::Status status, const QString &errorMessage);
 };
 
 /// Implementation of DiscoveryPhase::adjustRenamedPath

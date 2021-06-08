@@ -592,6 +592,7 @@ void SyncEngine::startSync()
         _discoveryPhase.data(), PinState::AlwaysLocal, _journal->keyValueStoreGetInt("last_sync", 0), _discoveryPhase.data());
     _discoveryPhase->startJob(discoveryJob);
     connect(discoveryJob, &ProcessDirectoryJob::etag, this, &SyncEngine::slotRootEtagReceived);
+    connect(_discoveryPhase.data(), &DiscoveryPhase::addErrorToGui, this, &SyncEngine::slotAddErrorToGui);
 }
 
 void SyncEngine::slotFolderDiscovered(bool local, const QString &folder)
@@ -1107,6 +1108,11 @@ void SyncEngine::slotInsufficientRemoteStorage()
 
     _uniqueErrors.insert(msg);
     emit syncError(msg, ErrorCategory::InsufficientRemoteStorage);
+}
+
+void SyncEngine::slotAddErrorToGui(SyncFileItem::Status status, const QString &errorMessage)
+{
+    emit syncError(errorMessage, ErrorCategory::Normal);
 }
 
 } // namespace OCC

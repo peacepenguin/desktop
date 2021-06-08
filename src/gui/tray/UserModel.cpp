@@ -39,6 +39,8 @@ User::User(AccountStatePtr &account, const bool &isCurrent, QObject *parent)
         this, &User::slotItemCompleted);
     connect(ProgressDispatcher::instance(), &ProgressDispatcher::syncError,
         this, &User::slotAddError);
+    connect(ProgressDispatcher::instance(), &ProgressDispatcher::addErrorToGui,
+        this, &User::slotAddErrorToGui);
 
     connect(&_notificationCheckTimer, &QTimer::timeout,
         this, &User::slotRefresh);
@@ -411,6 +413,30 @@ void User::slotAddError(const QString &folderAlias, const QString &message, Erro
             link._primary = true;
             activity._links.append(link);
         }
+
+        // add 'other errors' to activity list
+        _activityModel->addErrorToActivityList(activity);
+    }
+}
+
+void User::slotAddErrorToGui(const QString &folderAlias, SyncFileItem::Status status, const QString &errorMessage)
+{
+    auto folderInstance = FolderMan::instance()->folder(folderAlias);
+    if (!folderInstance)
+        return;
+
+    if (folderInstance->accountState() == _account.data()) {
+        qCWarning(lcActivity) << "Item " << folderInstance->shortGuiLocalPath() << " retrieved resulted in " << errorMessage;
+
+        Activity activity;
+        activity._type = Activity::SyncResultType;
+        activity._status = SyncResult::Error;
+        activity._dateTime = QDateTime::fromString(QDateTime::currentDateTime().toString(), Qt::ISODate);
+        activity._subject = errorMessage;
+        activity._message = folderInstance->shortGuiLocalPath();
+        activity._link = folderInstance->shortGuiLocalPath();
+        activity._accName = folderInstance->accountState()->account()->displayName();
+        activity._folder = folderAlias;
 
         // add 'other errors' to activity list
         _activityModel->addErrorToActivityList(activity);

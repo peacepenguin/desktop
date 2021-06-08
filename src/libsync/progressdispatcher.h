@@ -290,6 +290,8 @@ signals:
      */
     void syncError(const QString &folder, const QString &message, ErrorCategory category);
 
+    void addErrorToGui(const QString &folder, SyncFileItem::Status status, const QString &errorMessage);
+
     /**
      * @brief Emitted for a folder when a sync is done, listing all pending conflicts
      */
